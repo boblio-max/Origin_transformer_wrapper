@@ -1,1 +1,51 @@
-# RENAME THIS FILE TO LIB NAME
+py {
+    import transformer as t
+    import lora as l
+}
+
+let tfr = none
+let lora_config = none
+
+def init_transformer(data_path, model_name, output_dir) {
+    let tfr = t.init(data_path, model_name, output_dir)
+}
+
+def tf_config(max_seq, batch_size, epoch, lr) {
+    tfr.config(max_seq, batch_size, epoch, lr)
+}
+
+def load_data() {
+    tfr.load_data()
+}
+
+def split_data() {
+    tfr.split_data()
+}
+
+def load_tokens() {
+    tfr.load_tokens()
+}
+
+def load_model() {
+    tfr.load_model()
+}
+
+def lora(r, lora_alpha, target_modules, lora_dropout, bias, task_type) {
+    let lora_config = l.init(r, lora_alpha, target_modules, lora_dropout, bias, task_type)
+}
+
+def merge_model(lora_config) {
+    tfr.merge_model(lora_config)
+}
+
+def init_training_args(gradient_accumulation, log_dir, log_steps, save_steps, save_t_limit, load_best_model, report) {
+    tfr.training_args(gradient_accumulation, log_dir, log_steps, save_steps, save_t_limit, load_best_model, report)
+}
+
+def init_trainer() {
+    tfr.init_trainer()
+}
+
+def train() {
+    tfr.train()
+}

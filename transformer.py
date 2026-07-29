@@ -4,7 +4,9 @@ import peft as p
 from torch.utils.data import Dataset as d
 import json as j
 class transformer:
-    def __init__(self, data_path, model_name, output_dir):
+    def __init__(self):
+        pass
+    def init(self, data_path, model_name, output_dir):
         self.data_path = data_path
         self.dataset = None
         self.model_name = model_name
@@ -29,7 +31,7 @@ class transformer:
         with open(self.data_path, "r", encoding="utf-8") as f:
             self.dataset = j.load(f)
             
-    def data_split(self):
+    def split_data(self):
         x = int(len(self.dataset)*0.80)
         self.train_data = self.dataset[:x]
         self.test_data = self.dataset[x:]
