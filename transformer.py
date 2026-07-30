@@ -69,8 +69,8 @@ class transformer:
         self.trainer = trs.Trainer(
             model = self.model,
             args = self.training_args,
-            train_dataset=self.training_dataset,
-            eval_dataset=self.test_dataset,
+            train_dataset=self.train_data,
+            eval_dataset=self.test_data,
             tokenizer=self.tokenizer,
                     
         )
