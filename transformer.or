@@ -18,6 +18,10 @@ def load_data() {
     tfr.load_data()
 }
 
+def shuffle_data() {
+    tfr.shuffle_data()
+}
+
 def split_data() {
     tfr.split_data()
 }
@@ -48,4 +52,16 @@ def init_trainer() {
 
 def train() {
     tfr.train()
+}
+
+def load_adapter(adapter_path) {
+    tfr.load_adapter(adapter_path)
+}
+
+def generate(instruction) {
+    return tfr.generate(instruction)
+}
+
+def generate_with(instruction, max_tokens, temperature) {
+    return tfr.generate(instruction, max_tokens, temperature)
 }

@@ -3,6 +3,52 @@ import torch as th
 import peft as p
 from torch.utils.data import Dataset as d
 import json as j
+import random as rnd
+
+class OriginDataset(d):
+    def __init__(self, data, tokenizer, max_seq_length):
+        self.data = data
+        self.tokenizer = tokenizer
+        self.max_seq_length = max_seq_length
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        example = self.data[index]
+        instruction = example["instruction"]
+        output = example["output"]
+        formatted_text = "### Instruction\n" + instruction + "\n\n### Response\n" + output
+
+        full_tokens = self.tokenizer(
+            formatted_text,
+            max_length=self.max_seq_length,
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt"
+        )
+        input_ids = full_tokens["input_ids"].squeeze(0)
+        attention_mask = full_tokens["attention_mask"].squeeze(0)
+
+        labels = input_ids.clone()
+
+        instruction_text = "### Instruction\n" + instruction + "\n\n### Response\n"
+        instruction_tokens = self.tokenizer(
+            instruction_text,
+            max_length=self.max_seq_length,
+            truncation=True,
+            return_tensors="pt",
+            add_special_tokens=False
+        )
+        instruction_len = instruction_tokens["input_ids"].size(1)
+        labels[:instruction_len] = -100
+
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels
+        }
+
 class transformer:
     def __init__(self):
         pass
@@ -31,6 +77,9 @@ class transformer:
         with open(self.data_path, "r", encoding="utf-8") as f:
             self.dataset = j.load(f)
             
+    def shuffle_data(self):
+        rnd.shuffle(self.dataset)
+
     def split_data(self):
         x = int(len(self.dataset)*0.80)
         self.train_data = self.dataset[:x]
@@ -69,10 +118,9 @@ class transformer:
         self.trainer = trs.Trainer(
             model = self.model,
             args = self.training_args,
-            train_dataset=self.train_data,
-            eval_dataset=self.test_data,
+            train_dataset=OriginDataset(self.train_data, self.tokenizer, self.max_seq),
+            eval_dataset=OriginDataset(self.test_data, self.tokenizer, self.max_seq),
             tokenizer=self.tokenizer,
-                    
         )
     
     def train(self):
@@ -81,3 +129,22 @@ class transformer:
         self.model.save_pretrained(self.output_dir)
         self.tokenizer.save_pretrained(self.output_dir)
         print(f"Training complete. Model saved to {self.output_dir}")
+
+    def load_adapter(self, adapter_path):
+        self.model = p.PeftModel.from_pretrained(self.model, adapter_path)
+        self.model.to("cuda")
+        self.model.eval()
+
+    def generate(self, instruction, max_new_tokens=100, temperature=0.1):
+        prompt = "### Instruction\n" + instruction + "\n\n### Response\n"
+        inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
+        with th.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                do_sample=True
+            )
+        result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        parts = result.split("### Response\n")
+        return parts[1].strip() if len(parts) > 1 else result.strip()
